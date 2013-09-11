@@ -62,7 +62,7 @@ handle_cast ({process, Binary},
   Num = dict:fetch (<<"num">>, Data),
   ProgId = dict:fetch (<<"prog_id">>, Data),
   { Host, Context } =
-    case mondemand_util:construct_context (Event) of
+    case mondemand_server_util:construct_context (Event) of
       [] -> { "unknown", [] };
       C ->
         case lists:keytake (<<"host">>, 1, C) of
@@ -74,8 +74,8 @@ handle_cast ({process, Binary},
   Events =
     lists:map (
       fun(E) ->
-        K = dict:fetch (mondemand_util:stat_key (E), Data),
-        V = dict:fetch (mondemand_util:stat_val (E), Data),
+        K = dict:fetch (mondemand_server_util:stat_key (E), Data),
+        V = dict:fetch (mondemand_server_util:stat_val (E), Data),
         #riemannevent {
           service = ProgId,
           state = "ok",
