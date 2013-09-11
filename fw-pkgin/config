@@ -1,8 +1,8 @@
 # The FW_PACKAGE_MAINTAINER field is populated with the environment
 # variable FW_PACKAGE_DEFAULT_MAINTAINER if non-empty at init time
 
-FW_PACKAGE_NAME="mondemand-backend-riemann"
-FW_PACKAGE_VERSION="0.0.0"
+FW_PACKAGE_NAME="mondemand-backend-stats-riemann"
+FW_PACKAGE_VERSION="0.1.0"
 FW_PACKAGE_MAINTAINER="Anthony Molinaro <anthonym@alumni.caltech.edu>"
 FW_PACKAGE_SHORT_DESCRIPTION="Send mondemand stats/logs to riemann."
 FW_PACKAGE_DESCRIPTION=`cat README`
@@ -14,13 +14,19 @@ FW_PACKAGE_ARCHITECTURE_DEPENDENT="1"
 # 
 # For other packaging systems, the syntax is translated for you.
 
-FW_PACKAGE_DEPENDS="erlang-r15b-riemann"
+FW_PACKAGE_DEPENDS="
+  erlang-r15b-riemann,
+  mondemand-server (>= 1.0.0)
+"
 FW_PACKAGE_CONFLICTS=""
 FW_PACKAGE_PROVIDES=""
 FW_PACKAGE_REPLACES=""
 FW_PACKAGE_SUGGESTS=""
 
-FW_PACKAGE_BUILD_DEPENDS="erlang-r15b-riemann"
+FW_PACKAGE_BUILD_DEPENDS="
+  erlang-r15b-riemann,
+  mondemand-server (>= 1.0.0)
+"
 FW_PACKAGE_BUILD_CONFLICTS=""
 
 # dupload is used for submitting debian packages to a package archive
@@ -53,7 +59,7 @@ FW_RPM_POSTCREATEREPO_COMMANDS=${FW_RPM_POSTCREATEREPO_COMMANDS-"true"}
 
 # uncomment and set manually if you want the application name to be different
 # from FW_PACKAGE_NAME, application name must consist of characters [a-zA-Z_]
-FW_ERL_APP_NAME="mondemand_riemann"
+FW_ERL_APP_NAME="mondemand_backend_stats_riemann"
 
 # uncomment and set manually if autodetection of modules is incorrect.
 # should be an erlang expression which evaluates to a list.
@@ -83,7 +89,7 @@ FW_ERL_APP_NAME="mondemand_riemann"
 # uncomment to indicate additional OTP applications (besides kernel and stdlib)
 # that this application depends upon.  should be an erlang expression which 
 # evaluates to a list.
-# FW_ERL_PREREQ_APPLICATIONS_EXTRA="[]"
+FW_ERL_PREREQ_APPLICATIONS_EXTRA="[riemann]"
 
 # uncomment to add arbitrary extra content to the app file, e.g., an
 # included application directive.  should be an erlang expression which 

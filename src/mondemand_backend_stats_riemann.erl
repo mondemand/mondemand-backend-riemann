@@ -1,13 +1,17 @@
--module (mondemand_stats_riemann).
+-module (mondemand_backend_stats_riemann).
 
 -include_lib ("lwes/include/lwes.hrl").
 -include_lib ("riemann/include/riemann_pb.hrl").
 
+-behaviour (mondemand_server_backend).
 -behaviour (gen_server).
 
-%% API
+%% mondemand_backend callbacks
 -export ([ start_link/1,
-           process/1 ]).
+           process/1,
+           stats/0,
+           required_apps/0
+         ]).
 
 %% gen_server callbacks
 -export ([ init/1,
@@ -18,7 +22,7 @@
            code_change/3
          ]).
 
--record (state, {}).
+-record (state, { stats }).
 
 %%====================================================================
 %% API
@@ -29,18 +33,27 @@ start_link (Config) ->
 process (Event) ->
   gen_server:cast (?MODULE, {process, Event}).
 
+stats () ->
+  gen_server:call (?MODULE, {stats}).
+
+required_apps () ->
+  [ compiler, syntax_tools, lager, riemann ].
+
 %%====================================================================
 %% gen_server callbacks
 %%====================================================================
 init (_Config) ->
-  { ok, #state {  } }.
+  InitialStats =
+    mondemand_server_util:initialize_stats ([ errors, processed ] ),
+  { ok, #state { stats = InitialStats } }.
 
 handle_call (Request, From, State) ->
   error_logger:warning_msg ("~p : Unrecognized call ~p from ~p~n",
                             [?MODULE, Request, From]),
   { reply, ok, State }.
 
-handle_cast ({process, Binary}, State) ->
+handle_cast ({process, Binary},
+             State = #state { stats = Stats }) ->
   Event =  lwes_event:from_udp_packet (Binary, dict),
   #lwes_event { attrs = Data } = Event,
 
@@ -79,7 +92,11 @@ handle_cast ({process, Binary}, State) ->
       lists:seq (1,Num)
     ),
   riemann:send (Events),
-  {noreply, State};
+  { noreply,
+    State#state {
+      stats = mondemand_server_util:increment_stat (processed, Num, Stats)
+    }
+  };
 
 handle_cast (Request, State) ->
   error_logger:warning_msg ("~p : Unrecognized cast ~p~n",[?MODULE, Request]),
