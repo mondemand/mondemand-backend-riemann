@@ -1,3 +1,6 @@
+* Wed Sep 11 2013 Anthony Molinaro <anthonym@alumni.caltech.edu> 0.1.2
+- forgot the handle_call for stats
+
 * Wed Sep 11 2013 Anthony Molinaro <anthonym@alumni.caltech.edu> 0.1.1
 - forgot some renamings
 

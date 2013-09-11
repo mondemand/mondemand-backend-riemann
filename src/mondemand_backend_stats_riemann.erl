@@ -47,6 +47,9 @@ init (_Config) ->
     mondemand_server_util:initialize_stats ([ errors, processed ] ),
   { ok, #state { stats = InitialStats } }.
 
+handle_call ({stats}, _From,
+             State = #state { stats = Stats }) ->
+  { reply, Stats, State };
 handle_call (Request, From, State) ->
   error_logger:warning_msg ("~p : Unrecognized call ~p from ~p~n",
                             [?MODULE, Request, From]),

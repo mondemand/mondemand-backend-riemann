@@ -2,7 +2,7 @@
 # variable FW_PACKAGE_DEFAULT_MAINTAINER if non-empty at init time
 
 FW_PACKAGE_NAME="mondemand-backend-stats-riemann"
-FW_PACKAGE_VERSION="0.1.1"
+FW_PACKAGE_VERSION="0.1.2"
 FW_PACKAGE_MAINTAINER="Anthony Molinaro <anthonym@alumni.caltech.edu>"
 FW_PACKAGE_SHORT_DESCRIPTION="Send mondemand stats/logs to riemann."
 FW_PACKAGE_DESCRIPTION=`cat README`
