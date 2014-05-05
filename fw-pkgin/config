@@ -2,7 +2,7 @@
 # variable FW_PACKAGE_DEFAULT_MAINTAINER if non-empty at init time
 
 FW_PACKAGE_NAME="mondemand-backend-stats-riemann"
-FW_PACKAGE_VERSION="0.1.2"
+FW_PACKAGE_VERSION="0.1.3"
 FW_PACKAGE_MAINTAINER="Anthony Molinaro <anthonym@alumni.caltech.edu>"
 FW_PACKAGE_SHORT_DESCRIPTION="Send mondemand stats/logs to riemann."
 FW_PACKAGE_DESCRIPTION=`cat README`
@@ -16,7 +16,7 @@ FW_PACKAGE_ARCHITECTURE_DEPENDENT="1"
 
 FW_PACKAGE_DEPENDS="
   erlang-r15b-riemann,
-  mondemand-server (>= 1.0.0)
+  erlang-r15b-mondemand-server
 "
 FW_PACKAGE_CONFLICTS=""
 FW_PACKAGE_PROVIDES=""
@@ -25,7 +25,7 @@ FW_PACKAGE_SUGGESTS=""
 
 FW_PACKAGE_BUILD_DEPENDS="
   erlang-r15b-riemann,
-  mondemand-server (>= 1.0.0)
+  erlang-r15b-mondemand-server
 "
 FW_PACKAGE_BUILD_CONFLICTS=""
 
