@@ -9,8 +9,8 @@
 %% mondemand_backend callbacks
 -export ([ start_link/1,
            process/1,
-           stats/0,
-           required_apps/0
+           required_apps/0,
+           type/0
          ]).
 
 %% gen_server callbacks
@@ -22,7 +22,7 @@
            code_change/3
          ]).
 
--record (state, { stats }).
+-record (state, { }).
 
 %%====================================================================
 %% API
@@ -33,32 +33,30 @@ start_link (Config) ->
 process (Event) ->
   gen_server:cast (?MODULE, {process, Event}).
 
-stats () ->
-  gen_server:call (?MODULE, {stats}).
-
 required_apps () ->
   [ compiler, syntax_tools, lager, riemann ].
+
+type () ->
+  worker.
 
 %%====================================================================
 %% gen_server callbacks
 %%====================================================================
 init (_Config) ->
-  InitialStats =
-    mondemand_server_util:initialize_stats ([ errors, processed ] ),
-  { ok, #state { stats = InitialStats } }.
+  mondemand_server_stats:init_backend (?MODULE, events_processed),
+  mondemand_server_stats:init_backend (?MODULE, stats_sent_count),
+  { ok, #state { } }.
 
-handle_call ({stats}, _From,
-             State = #state { stats = Stats }) ->
-  { reply, Stats, State };
 handle_call (Request, From, State) ->
   error_logger:warning_msg ("~p : Unrecognized call ~p from ~p~n",
                             [?MODULE, Request, From]),
   { reply, ok, State }.
 
-handle_cast ({process, Binary},
-             State = #state { stats = Stats }) ->
+handle_cast ({process, Binary}, State) ->
   Event =  lwes_event:from_udp_packet (Binary, dict),
   #lwes_event { attrs = Data } = Event,
+
+  mondemand_server_stats:increment_backend (?MODULE, events_processed),
 
   Timestamp = dict:fetch (<<"ReceiptTime">>, Data),
 
@@ -95,11 +93,10 @@ handle_cast ({process, Binary},
       lists:seq (1,Num)
     ),
   riemann:send (Events),
-  { noreply,
-    State#state {
-      stats = mondemand_server_util:increment_stat (processed, Num, Stats)
-    }
-  };
+  mondemand_server_stats:increment_backend
+            (?MODULE, stats_sent_count, Num),
+
+  { noreply, State };
 
 handle_cast (Request, State) ->
   error_logger:warning_msg ("~p : Unrecognized cast ~p~n",[?MODULE, Request]),

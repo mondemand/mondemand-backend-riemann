@@ -1,0 +1,10 @@
+{ application, mondemand_backend_stats_riemann,
+  [
+    { description,"A plugin for the mondemand server to send stats to riemann"},
+    { vsn,"0.2.0"},
+    { modules,[]},
+    { registered,[]},
+    { applications, [kernel,stdlib,riemann]},
+    { env, [] }
+  ]
+}.
