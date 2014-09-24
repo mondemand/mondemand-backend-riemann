@@ -83,7 +83,7 @@ handle_cast ({process, Binary}, State) ->
           description = K,
           metric_sint64 = V,
           metric_f = V * 1.0,
-          time = Timestamp,
+          time = Timestamp / 1000,
           host = Host,
           attributes =
             [ #riemannattribute { key = CK, value = CV }
