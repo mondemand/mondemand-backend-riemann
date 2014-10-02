@@ -1,10 +1,16 @@
 -module (mondemand_backend_stats_riemann).
 
--include_lib ("lwes/include/lwes.hrl").
 -include_lib ("riemann/include/riemann_pb.hrl").
 
+-behaviour (supervisor).
 -behaviour (mondemand_server_backend).
--behaviour (gen_server).
+-behaviour (mondemand_backend_stats_handler).
+-behaviour (mondemand_backend_worker).
+
+%% mondemand_backend_worker callbacks
+-export ([ create/1,
+           send/2,
+           destroy/1 ]).
 
 %% mondemand_backend callbacks
 -export ([ start_link/1,
@@ -13,101 +19,102 @@
            type/0
          ]).
 
-%% gen_server callbacks
--export ([ init/1,
-           handle_call/3,
-           handle_cast/2,
-           handle_info/2,
-           terminate/2,
-           code_change/3
+%% mondemand_backend_stats_handler callbacks
+-export ([ header/0,
+           format_stat/8,
+           separator/0,
+           footer/0,
+           handle_response/2
          ]).
+
+%% supervisor callbacks
+-export ([ init/1 ]).
 
 -record (state, { }).
 
 %%====================================================================
-%% API
+%% mondemand_server_backend callbacks
 %%====================================================================
 start_link (Config) ->
-  gen_server:start_link ( { local, ?MODULE }, ?MODULE, Config, []).
+  supervisor:start_link ( { local, ?MODULE }, ?MODULE, [Config]).
 
 process (Event) ->
-  gen_server:cast (?MODULE, {process, Event}).
+  mondemand_backend_worker_pool_sup:process
+    (mondemand_backend_stats_riemann_worker_pool, Event).
 
 required_apps () ->
   [ compiler, syntax_tools, lager, riemann ].
 
 type () ->
-  worker.
+  supervisor.
 
 %%====================================================================
-%% gen_server callbacks
+%% supervisor callbacks
 %%====================================================================
-init (_Config) ->
-  mondemand_server_stats:init_backend (?MODULE, events_processed),
-  mondemand_server_stats:init_backend (?MODULE, stats_sent_count),
-  { ok, #state { } }.
-
-handle_call (Request, From, State) ->
-  error_logger:warning_msg ("~p : Unrecognized call ~p from ~p~n",
-                            [?MODULE, Request, From]),
-  { reply, ok, State }.
-
-handle_cast ({process, Binary}, State) ->
-  Event =  lwes_event:from_udp_packet (Binary, dict),
-  #lwes_event { attrs = Data } = Event,
-
-  mondemand_server_stats:increment_backend (?MODULE, events_processed),
-
-  Timestamp = dict:fetch (<<"ReceiptTime">>, Data),
-
-  Num = dict:fetch (<<"num">>, Data),
-  ProgId = dict:fetch (<<"prog_id">>, Data),
-  { Host, Context } =
-    case mondemand_server_util:construct_context (Event) of
-      [] -> { "unknown", [] };
-      C ->
-        case lists:keytake (<<"host">>, 1, C) of
-          false -> { "unknown", C };
-          {value, {<<"host">>, H}, OC } -> {H, OC}
-        end
-    end,
-
-  Events =
-    lists:map (
-      fun(E) ->
-        K = dict:fetch (mondemand_server_util:stat_key (E), Data),
-        V = dict:fetch (mondemand_server_util:stat_val (E), Data),
-        #riemannevent {
-          service = ProgId,
-          state = "ok",
-          description = K,
-          metric_sint64 = V,
-          metric_f = V * 1.0,
-          time = Timestamp / 1000,
-          host = Host,
-          attributes =
-            [ #riemannattribute { key = CK, value = CV }
-              || { CK, CV} <- Context ]
+init ([Config]) ->
+  Number = proplists:get_value (number, Config, 16), % FIXME: replace default
+  { ok,
+    {
+      {one_for_one, 10, 10},
+      [
+        { mondemand_backend_stats_riemann_worker_pool,
+          { mondemand_backend_worker_pool_sup, start_link,
+            [ mondemand_backend_stats_riemann_worker_pool,
+              mondemand_backend_worker,
+              Number,
+              ?MODULE ]
+          },
+          permanent,
+          2000,
+          supervisor,
+          [ ]
         }
-      end,
-      lists:seq (1,Num)
-    ),
-  riemann:send (Events),
-  mondemand_server_stats:increment_backend
-            (?MODULE, stats_sent_count, Num),
+      ]
+    }
+  }.
 
-  { noreply, State };
+%%====================================================================
+%% mondemand_backend_stats_handler callbacks
+%%====================================================================
+header () -> [].
 
-handle_cast (Request, State) ->
-  error_logger:warning_msg ("~p : Unrecognized cast ~p~n",[?MODULE, Request]),
-  { noreply, State }.
+separator () -> [].
 
-handle_info (Request, State) ->
-  error_logger:warning_msg ("~p : Unrecognized info ~p~n",[?MODULE, Request]),
-  {noreply, State}.
+format_stat (_Prefix, ProgId, Host,
+             _MetricType, MetricName, MetricValue, Timestamp, Context) ->
+  #riemannevent {
+    service = ProgId,
+    state = "ok",
+    description = MetricName,
+    metric_sint64 = MetricValue,
+    metric_f = MetricValue * 1.0,
+    time = trunc (Timestamp / 1000), % riemann uses seconds
+    host = Host,
+    attributes =
+      [ #riemannattribute { key = CK, value = CV }
+        || { CK, CV} <- Context ]
+  }.
 
-terminate (_Reason, #state { }) ->
+footer () -> [].
+
+handle_response (Response, _Previous) ->
+  error_logger:info_msg ("~p : got unexpected response ~p",[?MODULE, Response]),
+  { 0, undefined }.
+
+
+%%====================================================================
+%% mondemand_backend_worker callbacks
+%%====================================================================
+create (_) ->
+  #state {}.
+
+send (_, Data) ->
+  case riemann:send (lists:flatten (Data)) of
+    ok -> ok;
+    {error, E} ->
+      error_logger:error_msg ("Error sending to riemann : ~p",[E]),
+      error
+  end.
+
+destroy (_) ->
   ok.
-
-code_change (_OldVsn, State, _Extra) ->
-  {ok, State}.
