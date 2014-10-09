@@ -1,3 +1,7 @@
+* Thu Oct 09 2014 Anthony Molinaro <anthonym@alumni.caltech.edu> 0.3.1
+- the switch to mondemand_server_backend actually sent in seconds as the
+timestamp, so don't divide again.
+
 * Thu Oct 02 2014 Anthony Molinaro <anthonym@alumni.caltech.edu> 0.3.0
 - use the mondemand_server_backend so this scales out to multiple processes
 - send seconds to riemann for timestamp

@@ -88,7 +88,7 @@ format_stat (_Prefix, ProgId, Host,
     description = MetricName,
     metric_sint64 = MetricValue,
     metric_f = MetricValue * 1.0,
-    time = trunc (Timestamp / 1000), % riemann uses seconds
+    time = Timestamp,
     host = Host,
     attributes =
       [ #riemannattribute { key = CK, value = CV }
