@@ -21,7 +21,7 @@
 
 %% mondemand_backend_stats_handler callbacks
 -export ([ header/0,
-           format_stat/8,
+           format_stat/10,
            separator/0,
            footer/0,
            handle_response/2
@@ -80,7 +80,7 @@ header () -> [].
 
 separator () -> [].
 
-format_stat (_Prefix, ProgId, Host,
+format_stat (_Num, _Total, _Prefix, ProgId, Host,
              _MetricType, MetricName, MetricValue, Timestamp, Context) ->
   #riemannevent {
     service = ProgId,
@@ -109,10 +109,14 @@ create (_) ->
   #state {}.
 
 send (_, Data) ->
-  case riemann:send (lists:flatten (Data)) of
+  try riemann:send (lists:flatten (Data)) of
     ok -> ok;
     {error, E} ->
       error_logger:error_msg ("Error sending to riemann : ~p",[E]),
+      error
+  catch
+    E1:E2 ->
+      error_logger:error_msg ("Error sending to riemann : ~p:~p",[E1,E2]),
       error
   end.
 

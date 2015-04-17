@@ -1,3 +1,7 @@
+* Wed Apr 01 2015 Anthony Molinaro <anthonym@alumni.caltech.edu> 0.4.0
+- catch send errors and make them non-fatal
+- update to deal with mondemand_server_stats_handler changes
+
 * Thu Oct 09 2014 Anthony Molinaro <anthonym@alumni.caltech.edu> 0.3.1
 - the switch to mondemand_server_backend actually sent in seconds as the
 timestamp, so don't divide again.
