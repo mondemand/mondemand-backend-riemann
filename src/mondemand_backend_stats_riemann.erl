@@ -109,16 +109,23 @@ create (_) ->
   #state {}.
 
 send (_, Data) ->
-  try riemann:send (lists:flatten (Data)) of
-    ok -> ok;
-    {error, E} ->
-      error_logger:error_msg ("Error sending to riemann : ~p",[E]),
-      error
-  catch
-    E1:E2 ->
-      error_logger:error_msg ("Error sending to riemann : ~p:~p",[E1,E2]),
-      error
+  case lists:flatten(Data) of
+    [] ->
+      error_logger:error_msg ("No data to send to Riemann"),
+      error;
+    NewData ->
+      try riemann:send (NewData) of
+        ok -> ok;
+        {error, E} ->
+          error_logger:error_msg ("Error sending to riemann : ~p",[E]),
+          error
+      catch
+        E1:E2 ->
+          error_logger:error_msg ("Error sending to riemann : ~p:~p",[E1,E2]),
+          error
+      end
   end.
+
 
 destroy (_) ->
   ok.
