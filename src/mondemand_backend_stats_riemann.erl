@@ -52,7 +52,9 @@ type () ->
 %% supervisor callbacks
 %%====================================================================
 init ([Config]) ->
-  Number = proplists:get_value (number, Config, 16), % FIXME: replace default
+  % default to one process per scheduler
+  Number = proplists:get_value (number, Config, erlang:system_info(schedulers)),
+
   { ok,
     {
       {one_for_one, 10, 10},
@@ -81,19 +83,41 @@ header () -> [].
 separator () -> [].
 
 format_stat (_Num, _Total, _Prefix, ProgId, Host,
-             _MetricType, MetricName, MetricValue, Timestamp, Context) ->
-  #riemannevent {
-    service = ProgId,
-    state = "ok",
-    description = MetricName,
-    metric_sint64 = MetricValue,
-    metric_f = MetricValue * 1.0,
-    time = Timestamp,
-    host = Host,
-    attributes =
-      [ #riemannattribute { key = CK, value = CV }
-        || { CK, CV} <- Context ]
-  }.
+             MetricType, MetricName, MetricValue, Timestamp, Context) ->
+  case MetricType of
+    statset ->
+      lists:map (
+        fun ({SubType, SubTypeValue}) ->
+          #riemannevent {
+            service = ProgId,
+            state = "ok",
+            description =
+              MetricName ++ "_" ++ mondemand_util:stringify (SubType),
+            metric_sint64 = SubTypeValue,
+            metric_f = SubTypeValue * 1.0,
+            time = Timestamp,
+            host = Host,
+            attributes =
+              [ #riemannattribute { key = CK, value = CV }
+                || { CK, CV} <- Context ]
+          }
+        end,
+        mondemand_statsmsg:statset_to_list (MetricValue)
+      );
+    _ ->
+      #riemannevent {
+        service = ProgId,
+        state = "ok",
+        description = MetricName,
+        metric_sint64 = MetricValue,
+        metric_f = MetricValue * 1.0,
+        time = Timestamp,
+        host = Host,
+        attributes =
+          [ #riemannattribute { key = CK, value = CV }
+            || { CK, CV} <- Context ]
+      }
+  end.
 
 footer () -> [].
 
