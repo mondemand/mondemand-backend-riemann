@@ -92,14 +92,21 @@ format_stat (_Num, _Total, _Prefix, ProgId, Host,
             service = ProgId,
             state = "ok",
             description =
-              MetricName ++ "_" ++ mondemand_util:stringify (SubType),
+              list_to_binary ([mondemand_util:stringify (MetricName),
+                               "_",
+                               mondemand_util:stringify (SubType)]),
             metric_sint64 = SubTypeValue,
             metric_f = SubTypeValue * 1.0,
             time = Timestamp,
             host = Host,
             attributes =
-              [ #riemannattribute { key = CK, value = CV }
-                || { CK, CV} <- Context ]
+              [ #riemannattribute {
+                  key = mondemand_util:stringify (CK),
+                  value = mondemand_util:stringify (CV)
+                }
+                || {CK, CV}
+                <- Context
+              ]
           }
         end,
         mondemand_statsmsg:statset_to_list (MetricValue)
@@ -114,8 +121,13 @@ format_stat (_Num, _Total, _Prefix, ProgId, Host,
         time = Timestamp,
         host = Host,
         attributes =
-          [ #riemannattribute { key = CK, value = CV }
-            || { CK, CV} <- Context ]
+          [ #riemannattribute {
+              key = mondemand_util:stringify (CK),
+              value = mondemand_util:stringify (CV)
+            }
+            || {CK, CV}
+            <- Context
+          ]
       }
   end.
 
