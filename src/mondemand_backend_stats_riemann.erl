@@ -9,8 +9,11 @@
 
 %% mondemand_backend_worker callbacks
 -export ([ create/1,
+           connected/1,
+           connect/1,
            send/2,
-           destroy/1 ]).
+           destroy/1
+         ]).
 
 %% mondemand_backend callbacks
 -export ([ start_link/1,
@@ -142,9 +145,15 @@ handle_response (Response, _Previous) ->
 %% mondemand_backend_worker callbacks
 %%====================================================================
 create (_) ->
-  #state {}.
+  {ok, #state {}}.
 
-send (_, Data) ->
+connected (_State) ->
+  true. % always connected
+
+connect (State) ->
+  {ok, State}.
+
+send (State, Data) ->
   case lists:flatten(Data) of
     [] ->
       error_logger:error_msg ("No data to send to Riemann"),
@@ -160,7 +169,8 @@ send (_, Data) ->
           error_logger:error_msg ("Error sending to riemann : ~p:~p",[E1,E2]),
           error
       end
-  end.
+  end,
+  {ok, State}.
 
 
 destroy (_) ->
