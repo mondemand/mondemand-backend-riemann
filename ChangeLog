@@ -1,3 +1,6 @@
+* Wed Sep 23 2015 Anthony Molinaro <anthonym@alumni.caltech.edu> 0.6.0
+- refactor for changed backend_worker behaviour
+
 * Fri Jul 31 2015 Anthony Molinaro <anthonym@alumni.caltech.edu> 0.5.1
 - deal with metric names possibly being binaries
 
