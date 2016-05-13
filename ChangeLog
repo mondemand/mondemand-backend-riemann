@@ -1,3 +1,6 @@
+* Thu May 12 2016 Anthony Molinaro <anthonym@alumni.caltech.edu> 0.7.0
+- update deps
+
 * Wed Sep 23 2015 Anthony Molinaro <anthonym@alumni.caltech.edu> 0.6.0
 - refactor for changed backend_worker behaviour
 

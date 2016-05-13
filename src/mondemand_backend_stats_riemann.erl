@@ -87,19 +87,41 @@ separator () -> [].
 
 format_stat (_Num, _Total, _Prefix, ProgId, Host,
              MetricType, MetricName, MetricValue, Timestamp, Context) ->
-  case MetricType of
-    statset ->
-      lists:map (
-        fun ({SubType, SubTypeValue}) ->
-          #riemannevent {
+  Entries =
+    case MetricType of
+      statset ->
+        lists:map (
+          fun ({SubType, SubTypeValue}) ->
+            #riemannevent {
+              service = ProgId,
+              state = "ok",
+              description =
+                list_to_binary ([mondemand_util:stringify (MetricName),
+                                 "_",
+                                 mondemand_util:stringify (SubType)]),
+              metric_sint64 = SubTypeValue,
+              metric_f = SubTypeValue * 1.0,
+              time = Timestamp,
+              host = Host,
+              attributes =
+                [ #riemannattribute {
+                    key = mondemand_util:stringify (CK),
+                    value = mondemand_util:stringify (CV)
+                  }
+                  || {CK, CV}
+                  <- Context
+                ]
+            }
+          end,
+          mondemand_statsmsg:statset_to_list (MetricValue)
+        );
+      _ ->
+        [ #riemannevent {
             service = ProgId,
             state = "ok",
-            description =
-              list_to_binary ([mondemand_util:stringify (MetricName),
-                               "_",
-                               mondemand_util:stringify (SubType)]),
-            metric_sint64 = SubTypeValue,
-            metric_f = SubTypeValue * 1.0,
+            description = MetricName,
+            metric_sint64 = MetricValue,
+            metric_f = MetricValue * 1.0,
             time = Timestamp,
             host = Host,
             attributes =
@@ -111,28 +133,9 @@ format_stat (_Num, _Total, _Prefix, ProgId, Host,
                 <- Context
               ]
           }
-        end,
-        mondemand_statsmsg:statset_to_list (MetricValue)
-      );
-    _ ->
-      #riemannevent {
-        service = ProgId,
-        state = "ok",
-        description = MetricName,
-        metric_sint64 = MetricValue,
-        metric_f = MetricValue * 1.0,
-        time = Timestamp,
-        host = Host,
-        attributes =
-          [ #riemannattribute {
-              key = mondemand_util:stringify (CK),
-              value = mondemand_util:stringify (CV)
-            }
-            || {CK, CV}
-            <- Context
-          ]
-      }
-  end.
+       ]
+    end,
+  {ok, Entries, length (Entries), 0}.
 
 footer () -> [].
 
